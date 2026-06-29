@@ -7,6 +7,7 @@ import { useTheme } from '@mui/material/styles';
 import toast from 'react-hot-toast';
 import { SuperAdminAPI } from '../api/endpoints';
 import { PageHeader } from '../components/common';
+import { API_ORIGIN } from '../api/config';
 
 const DEVICES = ['', 'desktop', 'mobile', 'tablet'];
 const RANGES = [{ label: '7d', days: 7 }, { label: '30d', days: 30 }, { label: '90d', days: 90 }];
@@ -17,6 +18,7 @@ const RANGES = [{ label: '7d', days: 7 }, { label: '30d', days: 30 }, { label: '
 // serves the admin too, same-origin '' works.
 const LANDING_URL =
   import.meta.env.VITE_LANDING_URL ||
+  API_ORIGIN ||
   (import.meta.env.DEV ? 'http://localhost:5050' : '');
 
 // Render click points (0–100 % coords) as a blue→red density heatmap on a

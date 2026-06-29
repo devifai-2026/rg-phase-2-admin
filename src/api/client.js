@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { API_BASE } from './config';
 
-const api = axios.create({ baseURL: '/api', timeout: 30000 });
+const api = axios.create({ baseURL: API_BASE, timeout: 30000 });
 
 // Attach access token.
 api.interceptors.request.use((config) => {
@@ -25,7 +26,7 @@ api.interceptors.response.use(
       original._retry = true;
       isRefreshing = true;
       try {
-        const { data } = await axios.post('/api/auth/refresh', { refreshToken: localStorage.getItem('refreshToken') });
+        const { data } = await axios.post(`${API_BASE}/auth/refresh`, { refreshToken: localStorage.getItem('refreshToken') });
         localStorage.setItem('accessToken', data.data.accessToken);
         localStorage.setItem('refreshToken', data.data.refreshToken);
         queue.forEach((p) => { p.original.headers.Authorization = `Bearer ${data.data.accessToken}`; p.resolve(api(p.original)); });

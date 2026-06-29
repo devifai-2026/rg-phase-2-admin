@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client';
+import { SOCKET_URL } from './config';
 
 /**
  * Admin realtime socket. Connects to the same origin (Vite proxies /socket.io to
@@ -21,7 +22,7 @@ function connect() {
     socket.connect();
     return socket;
   }
-  socket = io(window.location.origin, {
+  socket = io(SOCKET_URL, {
     path: '/socket.io',
     auth: { token },
     transports: ['websocket', 'polling'],
