@@ -20,3 +20,27 @@ export const API_BASE = RAW ? `https://34-93-133-182.sslip.io/api` : '/api';
 
 /** Where Socket.IO connects. window.location.origin in dev, backend in prod. */
 export const SOCKET_URL = RAW || window.location.origin;
+
+/**
+ * The tenant this admin instance manages (multi-tenant SaaS). Resolution order:
+ *   1) VITE_TENANT build-time override (for a per-tenant admin build), else
+ *   2) derived from the host subdomain: <slug>.admin.<root> or <slug>.<root>.
+ * Empty on localhost / a bare host → single-tenant (backend default tenant).
+ * Sent as the X-Tenant header by the API client and socket.
+ */
+function deriveTenantSlug() {
+  const override = import.meta.env.VITE_TENANT;
+  if (override) return String(override).toLowerCase();
+  const host = (typeof window !== 'undefined' ? window.location.hostname : '') || '';
+  // localhost / IP → no tenant (dev / single-tenant).
+  if (/^(localhost|127\.|\d+\.\d+\.\d+\.\d+$)/.test(host)) return '';
+  const parts = host.split('.');
+  // Need at least <slug>.<something>.<tld>; take the leftmost label unless it's a
+  // platform-reserved label.
+  if (parts.length < 3) return '';
+  const label = parts[0];
+  if (['www', 'admin', 'owner', 'app', 'api'].includes(label)) return '';
+  return label.toLowerCase();
+}
+
+export const TENANT_SLUG = deriveTenantSlug();

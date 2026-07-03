@@ -1,5 +1,10 @@
 import { io } from 'socket.io-client';
-import { SOCKET_URL } from './config';
+import { SOCKET_URL, TENANT_SLUG } from './config';
+
+// Handshake auth carries the tenant (from the admin subdomain) so the backend
+// socket routes to the right tenant DB — matches the X-Tenant header the REST
+// client sends. Empty on single-tenant/localhost.
+const tenantAuth = TENANT_SLUG ? { tenant: TENANT_SLUG } : {};
 
 /**
  * Admin realtime socket. Connects to the same origin (Vite proxies /socket.io to
@@ -18,13 +23,13 @@ function connect() {
   if (!token) return null;
   // Reuse an existing (disconnected) instance — just refresh auth + reconnect.
   if (socket) {
-    socket.auth = { token };
+    socket.auth = { token, ...tenantAuth };
     socket.connect();
     return socket;
   }
   socket = io(SOCKET_URL, {
     path: '/socket.io',
-    auth: { token },
+    auth: { token, ...tenantAuth },
     transports: ['websocket', 'polling'],
     reconnection: true,
     reconnectionAttempts: Infinity,

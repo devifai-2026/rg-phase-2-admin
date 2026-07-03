@@ -1,12 +1,16 @@
 import axios from 'axios';
-import { API_BASE } from './config';
+import { API_BASE, TENANT_SLUG } from './config';
 
 const api = axios.create({ baseURL: API_BASE, timeout: 30000 });
 
-// Attach access token.
+// Attach access token + tenant. In multi-tenant deployments each client admin is
+// served from its own subdomain (clientA.admin.<root>); TENANT_SLUG is derived
+// from that host and sent as X-Tenant so the backend routes to the right tenant
+// DB. Empty on a single-tenant/localhost deploy → backend uses the default tenant.
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken');
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (TENANT_SLUG) config.headers['X-Tenant'] = TENANT_SLUG;
   return config;
 });
 
