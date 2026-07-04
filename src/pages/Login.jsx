@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box, Typography, TextField, Button, Stack, InputAdornment, Divider, Chip } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
@@ -6,7 +6,10 @@ import PhoneIcon from '@mui/icons-material/PhoneOutlined';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import toast from 'react-hot-toast';
 import { AuthAPI } from '../api/endpoints';
+import api from '../api/client';
 import { useAuth } from '../auth/AuthContext';
+// Note: the DEV_ACCOUNTS hints below are already gated by import.meta.env.DEV,
+// so they never ship in a production (tenant) admin build.
 
 const DEV_ACCOUNTS = [
   { role: 'Super Admin', phone: '9999900000' },
@@ -14,13 +17,29 @@ const DEV_ACCOUNTS = [
 ];
 const DEV_OTP = '123456';
 
-// Brand wordmark "rg" mark rendered in CSS (red g, ink r) until the real logo lands.
-function LogoMark({ size = 44, b }) {
+// Tenant initials from the brand name: up to 2 leading letters (e.g.
+// "Rudraganga" → "R", "Acme Astro" → "AA"). White-label fallback when no logo.
+function initialsFor(name) {
+  const words = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return '★';
+  if (words.length === 1) return words[0][0].toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
+}
+
+// Brand mark: the tenant's logo when set (from the PO console), else the tenant's
+// initials. NEVER a hardcoded brand — this is one shared admin build for all tenants.
+function LogoMark({ size = 44, b, logoUrl, appName }) {
+  if (logoUrl) {
+    return (
+      <Box sx={{ width: size, height: size, borderRadius: 2.2, overflow: 'hidden', border: `1px solid ${b.border}`, display: 'grid', placeItems: 'center', background: b.surface }}>
+        <Box component="img" src={logoUrl} alt={appName || 'logo'} sx={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+      </Box>
+    );
+  }
   return (
     <Box sx={{ width: size, height: size, borderRadius: 2.2, background: b.surface, border: `1px solid ${b.border}`, display: 'grid', placeItems: 'center', boxShadow: `0 6px 18px -8px ${alpha(b.RED.main, 0.6)}` }}>
-      <Typography sx={{ fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: size * 0.5, lineHeight: 1, letterSpacing: '-0.04em' }}>
-        <Box component="span" sx={{ color: b.text }}>r</Box>
-        <Box component="span" sx={{ color: b.RED.main }}>g</Box>
+      <Typography sx={{ fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: size * 0.44, lineHeight: 1, letterSpacing: '-0.04em', color: b.RED.main }}>
+        {initialsFor(appName)}
       </Typography>
     </Box>
   );
@@ -37,6 +56,19 @@ export default function Login() {
   const [step, setStep] = useState('phone');
   const [loading, setLoading] = useState(false);
   const [devCode, setDevCode] = useState(null);
+  // Tenant brand for the login (logo + name), from the public app-config. The
+  // API client sends X-Tenant (from the subdomain), so this returns THIS tenant's
+  // brand. Neutral 'Admin' fallback until it loads / in single-tenant mode.
+  const [brand, setBrand] = useState({ appName: '', logoUrl: '' });
+  useEffect(() => {
+    api.get('/app-config')
+      .then((res) => {
+        const d = res.data?.data || {};
+        setBrand({ appName: d.appName || '', logoUrl: d.logoUrl || '' });
+      })
+      .catch(() => {});
+  }, []);
+  const brandName = brand.appName || 'Admin';
 
   const sendOtp = async () => {
     if (!/^\d{10}$/.test(phone)) return toast.error('Enter a valid 10-digit phone');
@@ -88,9 +120,9 @@ export default function Login() {
         {/* concentric zodiac-wheel motif */}
         <Box aria-hidden sx={{ position: 'absolute', right: -160, bottom: -160, width: 520, height: 520, borderRadius: '50%', border: `1px solid ${alpha(b.RED.soft, 0.25)}`, '&::before, &::after': { content: '""', position: 'absolute', inset: 60, borderRadius: '50%', border: `1px solid ${alpha(b.RED.soft, 0.18)}` }, '&::after': { inset: 140, borderColor: alpha(b.RED.soft, 0.12) } }} />
         <Stack direction="row" spacing={1.5} alignItems="center" sx={{ position: 'relative' }}>
-          <LogoMark b={b} />
+          <LogoMark b={b} logoUrl={brand.logoUrl} appName={brandName} />
           <Box>
-            <Typography sx={{ fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: 20, lineHeight: 1 }}>Rudraganga</Typography>
+            <Typography sx={{ fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: 20, lineHeight: 1 }}>{brandName}</Typography>
             <Typography variant="caption" sx={{ color: b.RED.soft, letterSpacing: 2, fontWeight: 600 }}>ADMIN CONSOLE</Typography>
           </Box>
         </Stack>
@@ -102,13 +134,13 @@ export default function Login() {
             Oversee astrologers, consultations, payments and payouts from one premium control center.
           </Typography>
         </Box>
-        <Typography variant="caption" sx={{ position: 'relative', color: alpha('#FFF', 0.4) }}>© 2026 Rudraganga · Made under a watchful sky</Typography>
+        <Typography variant="caption" sx={{ position: 'relative', color: alpha('#FFF', 0.4) }}>© {brandName} · Made under a watchful sky</Typography>
       </Box>
 
       {/* ── Right: form ── */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: { xs: 3, sm: 6 }, background: b.ground }}>
         <Box sx={{ width: '100%', maxWidth: 380 }}>
-          <Box sx={{ display: { xs: 'flex', md: 'none' }, mb: 3 }}><LogoMark b={b} /></Box>
+          <Box sx={{ display: { xs: 'flex', md: 'none' }, mb: 3 }}><LogoMark b={b} logoUrl={brand.logoUrl} appName={brandName} /></Box>
           <Typography variant="h5" sx={{ color: b.text, mb: 0.5 }}>{step === 'phone' ? 'Sign in' : 'Verify'}</Typography>
           <Typography variant="body2" sx={{ color: b.textDim, mb: 4 }}>
             {step === 'phone' ? 'Enter your registered admin number' : `Code sent to +91 ${phone}`}
