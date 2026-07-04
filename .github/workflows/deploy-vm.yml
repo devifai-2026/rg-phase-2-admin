@@ -46,17 +46,20 @@ jobs:
           chmod 600 ~/.ssh/id_deploy
           ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || true
 
-      - name: Sync build to VM (/opt/rg-admin)
+      - name: Ship build to VM (/opt/rg-admin)
         run: |
-          # Stage into a temp dir the SSH user can write, then move into place
-          # with sudo (the SSH user isn't the file owner of /opt/rg-admin).
-          rsync -az --delete -e "ssh -i ~/.ssh/id_deploy" \
-            dist/ "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}:/tmp/rg-admin-new/"
+          # tar over SSH (rsync isn't installed on the VM). Pack dist locally,
+          # stream it to the VM, and atomically swap it into /opt/rg-admin.
+          tar -czf /tmp/rg-admin-dist.tgz -C dist .
+          scp -i ~/.ssh/id_deploy /tmp/rg-admin-dist.tgz \
+            "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}:/tmp/rg-admin-dist.tgz"
           ssh -i ~/.ssh/id_deploy "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}" bash -s <<'EOF'
           set -euo pipefail
+          sudo rm -rf /opt/rg-admin-new && sudo mkdir -p /opt/rg-admin-new
+          sudo tar -xzf /tmp/rg-admin-dist.tgz -C /opt/rg-admin-new
           sudo mkdir -p /opt/rg-admin
-          sudo rsync -a --delete /tmp/rg-admin-new/ /opt/rg-admin/
-          rm -rf /tmp/rg-admin-new
+          sudo cp -rT /opt/rg-admin-new /opt/rg-admin
+          sudo rm -rf /opt/rg-admin-new /tmp/rg-admin-dist.tgz
           sudo test -f /opt/rg-admin/index.html && echo "admin deployed OK" || (echo "index.html missing"; exit 1)
           EOF
 

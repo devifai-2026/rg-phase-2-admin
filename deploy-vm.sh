@@ -30,7 +30,8 @@ gcloud compute ssh "$VM" --zone="$ZONE" --project="$PROJECT" --command="
   set -e
   sudo rm -rf /opt/rg-admin-new && sudo mkdir -p /opt/rg-admin-new
   sudo tar -xzf /tmp/rg-admin-dist.tgz -C /opt/rg-admin-new
-  sudo rsync -a --delete /opt/rg-admin-new/ /opt/rg-admin/ 2>/dev/null || sudo cp -rT /opt/rg-admin-new /opt/rg-admin
+  sudo mkdir -p /opt/rg-admin
+  sudo cp -rT /opt/rg-admin-new /opt/rg-admin
   sudo rm -rf /opt/rg-admin-new /tmp/rg-admin-dist.tgz
   sudo test -f /opt/rg-admin/index.html && echo 'admin deployed OK' || (echo 'index.html missing'; exit 1)
 "
