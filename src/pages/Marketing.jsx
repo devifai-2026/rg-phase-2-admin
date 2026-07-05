@@ -214,8 +214,17 @@ export default function Marketing() {
                   <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
                     {audChip(it.audience)} {langChip(it.lang)}
                     <Box sx={{ flex: 1 }} />
-                    <Tooltip title="Keep"><IconButton size="small" onClick={() => setKeep((k) => ({ ...k, [it._id]: true }))} sx={{ color: kept ? b.green : b.textDim }}><CheckIcon fontSize="small" /></IconButton></Tooltip>
-                    <Tooltip title="Reject"><IconButton size="small" onClick={() => setKeep((k) => ({ ...k, [it._id]: false }))} sx={{ color: !kept ? b.red : b.textDim }}><CloseIcon fontSize="small" /></IconButton></Tooltip>
+                    <Chip
+                      size="small"
+                      label={kept ? 'Kept' : 'Rejected'}
+                      sx={{
+                        mr: 0.5, fontWeight: 700, fontSize: 11,
+                        color: kept ? b.green : b.red,
+                        bgcolor: alpha(kept ? b.green : b.red, 0.12),
+                      }}
+                    />
+                    <Tooltip title="Keep"><IconButton size="small" onClick={() => setKeep((k) => ({ ...k, [it._id]: true }))} sx={{ color: kept ? b.green : b.textDim, bgcolor: kept ? alpha(b.green, 0.14) : 'transparent' }}><CheckIcon fontSize="small" /></IconButton></Tooltip>
+                    <Tooltip title="Reject"><IconButton size="small" onClick={() => setKeep((k) => ({ ...k, [it._id]: false }))} sx={{ color: !kept ? b.red : b.textDim, bgcolor: !kept ? alpha(b.red, 0.14) : 'transparent' }}><CloseIcon fontSize="small" /></IconButton></Tooltip>
                   </Stack>
                   <Typography sx={{ fontWeight: 700, color: b.text }}>{it.title}</Typography>
                   <Typography variant="body2" sx={{ color: b.textDim }}>{it.body}</Typography>
