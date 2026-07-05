@@ -32,6 +32,7 @@ export default function Marketing() {
   const [tab, setTab] = useState(0);
   const [keep, setKeep] = useState({}); // id → bool (Save vs Reject in the review)
   const [newTime, setNewTime] = useState('09:00'); // for the fixed-times picker
+  const [genLang, setGenLang] = useState(''); // '' = auto-mix; else force one language
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -70,7 +71,7 @@ export default function Marketing() {
   const generate = async () => {
     setGenerating(true);
     try {
-      const { data } = await AdminAPI.generateMarketing(30);
+      const { data } = await AdminAPI.generateMarketing(30, genLang || undefined);
       const items = data.data?.items || [];
       setPending(items);
       setKeep(Object.fromEntries(items.map((i) => [i._id, true]))); // default: keep all
@@ -164,9 +165,26 @@ export default function Marketing() {
         {!cfg.enabled && <Typography variant="caption" sx={{ color: b.amber, display: 'block', mt: 1.5 }}>Agent is OFF — turn the switch on to start sending.</Typography>}
 
         <Divider sx={{ my: 2.5, borderColor: b.borderSoft }} />
-        <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap>
+        <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap alignItems="center">
+          <TextField
+            select size="small" label="Language" value={genLang}
+            onChange={(e) => setGenLang(e.target.value)} sx={{ minWidth: 150 }}
+          >
+            <MenuItem value="">Auto (mix)</MenuItem>
+            <MenuItem value="en">English</MenuItem>
+            <MenuItem value="hi">हिन्दी (Hindi)</MenuItem>
+            <MenuItem value="hi-rom">Hinglish</MenuItem>
+            <MenuItem value="bn">বাংলা (Bengali)</MenuItem>
+            <MenuItem value="bn-rom">Banglish</MenuItem>
+            <MenuItem value="mr">मराठी (Marathi)</MenuItem>
+            <MenuItem value="pa">ਪੰਜਾਬੀ (Punjabi)</MenuItem>
+            <MenuItem value="as">অসমীয়া (Assamese)</MenuItem>
+            <MenuItem value="kn">ಕನ್ನಡ (Kannada)</MenuItem>
+            <MenuItem value="te">తెలుగు (Telugu)</MenuItem>
+            <MenuItem value="ta">தமிழ் (Tamil)</MenuItem>
+          </TextField>
           <Button variant="contained" startIcon={generating ? <CircularProgress size={15} color="inherit" /> : <AutoAwesomeIcon />} disabled={generating} onClick={generate}>
-            {generating ? 'Generating…' : 'Generate 30 new lines'}
+            {generating ? 'Generating…' : (genLang ? 'Generate 30 lines' : 'Generate 30 new lines')}
           </Button>
           <Button variant="outlined" startIcon={<SendIcon />} onClick={runNow} disabled={(cfg.pool?.activeUsers || 0) + (cfg.pool?.activeAstro || 0) === 0}>
             Send one cycle now (test)

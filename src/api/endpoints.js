@@ -48,7 +48,7 @@ export const AdminAPI = {
   // AI Marketing Agent
   getMarketingConfig: () => api.get('/admin/marketing/config'),
   updateMarketingConfig: (body) => api.put('/admin/marketing/config', body),
-  generateMarketing: (total) => api.post('/admin/marketing/generate', { total }),
+  generateMarketing: (total, lang) => api.post('/admin/marketing/generate', { total, lang }),
   reviewMarketing: (body) => api.post('/admin/marketing/review', body),
   listMarketing: (params) => api.get('/admin/marketing', { params }),
   runMarketingNow: () => api.post('/admin/marketing/run-now'),
