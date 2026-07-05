@@ -140,7 +140,6 @@ const GROUPS = [
     items: [
       { to: '/notifications', label: 'Notifications', icon: <NotificationsIcon /> },
       { to: '/legal', label: 'Legal & Policies', icon: <GavelIcon /> },
-      { to: '/danger-prompts', label: 'Danger Prompts', icon: <WarningIcon /> },
       { to: '/llm-logs', label: 'LLM Logs', icon: <AiIcon /> },
       { to: '/marketing', label: 'AI Marketing', icon: <NotificationsIcon /> },
       { to: '/translation', label: 'Translation', icon: <TranslateIcon /> },

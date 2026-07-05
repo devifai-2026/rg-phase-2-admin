@@ -44,7 +44,6 @@ import SignupFunnel from './pages/SignupFunnel';
 import AnalyticsGA from './pages/AnalyticsGA';
 import Notifications from './pages/Notifications';
 import LegalContent from './pages/LegalContent';
-import DangerPrompts from './pages/DangerPrompts';
 import AiReminders from './pages/AiReminders';
 import AdminFeedback from './pages/AdminFeedback';
 import LlmLogs from './pages/LlmLogs';
@@ -110,7 +109,6 @@ export default function App() {
         {/* Super-admin only */}
         <Route path="/notifications" element={<RequireSuperAdmin><Notifications /></RequireSuperAdmin>} />
         <Route path="/legal" element={<RequireSuperAdmin><LegalContent /></RequireSuperAdmin>} />
-        <Route path="/danger-prompts" element={<RequireSuperAdmin><DangerPrompts /></RequireSuperAdmin>} />
         <Route path="/settings" element={<RequireSuperAdmin><Settings /></RequireSuperAdmin>} />
         <Route path="/app-config" element={<RequireSuperAdmin><AppConfiguration /></RequireSuperAdmin>} />
         <Route path="/admins" element={<RequireSuperAdmin><AdminManagement /></RequireSuperAdmin>} />
