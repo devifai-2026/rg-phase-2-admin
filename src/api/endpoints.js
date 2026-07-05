@@ -32,8 +32,7 @@ export const AdminAPI = {
   getPaymentGateway: () => api.get('/admin/payment-gateway'),
   requestPaymentGatewayOtp: () => api.post('/admin/payment-gateway/request-otp'),
   updatePaymentGateway: (body) => api.put('/admin/payment-gateway', body),
-  // Firebase / GA4 analytics (native charts via the GA4 Data API)
-  gaAnalytics: (params) => api.get('/admin/analytics/ga', { params }),
+  // Firebase/GA4 analytics moved to the PO console (GA4 is platform-global).
   // AI reminders + recaps (oversight) + chat-thread preview for the modal
   listReminders: (params) => api.get('/admin/ai/reminders', { params }),
   listRecaps: (params) => api.get('/admin/ai/recaps', { params }),

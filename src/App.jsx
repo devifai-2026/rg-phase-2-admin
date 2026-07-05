@@ -41,7 +41,6 @@ import Applications from './pages/Applications';
 import Heatmap from './pages/Heatmap';
 import Funnel from './pages/Funnel';
 import SignupFunnel from './pages/SignupFunnel';
-import AnalyticsGA from './pages/AnalyticsGA';
 import Notifications from './pages/Notifications';
 import LegalContent from './pages/LegalContent';
 import AiReminders from './pages/AiReminders';
@@ -113,7 +112,6 @@ export default function App() {
         <Route path="/app-config" element={<RequireSuperAdmin><AppConfiguration /></RequireSuperAdmin>} />
         <Route path="/admins" element={<RequireSuperAdmin><AdminManagement /></RequireSuperAdmin>} />
         <Route path="/audit" element={<RequireSuperAdmin><AuditLogs /></RequireSuperAdmin>} />
-        <Route path="/analytics/firebase" element={<RequireSuperAdmin><AnalyticsGA /></RequireSuperAdmin>} />
         <Route path="/analytics/heatmap" element={<RequireSuperAdmin><Heatmap /></RequireSuperAdmin>} />
         <Route path="/analytics/funnel" element={<RequireSuperAdmin><Funnel /></RequireSuperAdmin>} />
         <Route path="/analytics/form-funnel" element={<RequireSuperAdmin><SignupFunnel /></RequireSuperAdmin>} />

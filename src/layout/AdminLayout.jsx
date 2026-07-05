@@ -38,7 +38,6 @@ import InboxIcon from '@mui/icons-material/MarkEmailUnread';
 import AssignmentIcon from '@mui/icons-material/AssignmentInd';
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import HeatmapIcon from '@mui/icons-material/GridOn';
-import InsightsIcon from '@mui/icons-material/Insights';
 import FunnelIcon from '@mui/icons-material/FilterAlt';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -129,7 +128,7 @@ const GROUPS = [
   {
     section: 'Analytics', icon: <FunnelIcon />, superOnly: true,
     items: [
-      { to: '/analytics/firebase', label: 'Firebase GA', icon: <InsightsIcon /> },
+      // Firebase GA moved to the PO console (GA4 is a platform-global property).
       { to: '/analytics/heatmap', label: 'Heatmap', icon: <HeatmapIcon /> },
       { to: '/analytics/funnel', label: 'Funnel', icon: <FunnelIcon /> },
       { to: '/analytics/form-funnel', label: 'Form Funnel', icon: <TimelineIcon /> },
