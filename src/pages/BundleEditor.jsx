@@ -13,7 +13,8 @@ const rupees = (v) => `₹${Number(v || 0).toLocaleString('en-IN')}`;
 
 export default function BundleEditor() {
   const { id } = useParams();
-  const isNew = id === 'new';
+  // /bundles/new has no :id param → id is undefined; treat no-id as create mode.
+  const isNew = !id || id === 'new';
   const navigate = useNavigate();
   const { palette } = useTheme();
   const b = palette.brand;

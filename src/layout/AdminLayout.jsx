@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box, Drawer, AppBar, Toolbar, Typography, List, ListItemButton, ListItemIcon, ListItemText,
@@ -55,9 +55,18 @@ import OverviewIcon from '@mui/icons-material/Bolt';
 import { useAuth } from '../auth/AuthContext';
 import { useColorMode } from '../theme/ColorModeContext';
 import { useActivity } from '../activity/ActivityContext';
+import api from '../api/client';
 
 const DRAWER = 252;
 const RAIL = 68;
+
+// Brand initials from the tenant app name (e.g. "Astro Talk" → "AT"). Used when
+// the tenant hasn't uploaded a logo — NEVER a hardcoded brand.
+function initialsFor(name) {
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '★';
+  return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+}
 
 // Injected from package.json by Vite (see vite.config.js `define`).
 const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0';
@@ -186,6 +195,15 @@ export default function AdminLayout() {
   const [anchor, setAnchor] = useState(null); // account menu
   const [bellAnchor, setBellAnchor] = useState(null); // notifications popover
 
+  // Tenant brand for the sidebar header — logo + name from the public app-config.
+  // NEVER hardcoded (this admin is white-label; each tenant sees only its own brand).
+  const [brand, setBrand] = useState({ appName: '', logoUrl: '' });
+  useEffect(() => {
+    api.get('/app-config')
+      .then(({ data }) => setBrand({ appName: data?.data?.appName || '', logoUrl: data?.data?.logoUrl || '' }))
+      .catch(() => {});
+  }, []);
+
   // Collapsed icon-rail (desktop only). Persisted.
   const [rail, setRail] = useState(() => localStorage.getItem(RAIL_KEY) === '1');
   const toggleRail = () => setRail((r) => { localStorage.setItem(RAIL_KEY, r ? '0' : '1'); return !r; });
@@ -304,14 +322,18 @@ export default function AdminLayout() {
 
   const brandHeader = (
     <Box sx={{ px: rail && !isMobile ? 1 : 2.5, py: 2.25, display: 'flex', alignItems: 'center', gap: 1.25, justifyContent: rail && !isMobile ? 'center' : 'flex-start' }}>
-      <Box sx={{ width: 38, height: 38, borderRadius: 2, background: ink.bg2, border: `1px solid ${ink.border}`, display: 'grid', placeItems: 'center', boxShadow: `0 4px 14px -6px ${alpha(b.RED.main, 0.7)}`, flexShrink: 0 }}>
-        <Typography sx={{ fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: 19, lineHeight: 1, letterSpacing: '-0.04em' }}>
-          <Box component="span" sx={{ color: '#fff' }}>r</Box><Box component="span" sx={{ color: b.RED.main }}>g</Box>
-        </Typography>
+      <Box sx={{ width: 38, height: 38, borderRadius: 2, background: ink.bg2, border: `1px solid ${ink.border}`, display: 'grid', placeItems: 'center', boxShadow: `0 4px 14px -6px ${alpha(b.RED.main, 0.7)}`, flexShrink: 0, overflow: 'hidden' }}>
+        {brand.logoUrl ? (
+          <Box component="img" src={brand.logoUrl} alt={brand.appName || 'logo'} sx={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        ) : (
+          <Typography sx={{ fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: 16, lineHeight: 1, letterSpacing: '-0.04em', color: b.RED.main }}>
+            {initialsFor(brand.appName)}
+          </Typography>
+        )}
       </Box>
       {(!rail || isMobile) && (
         <Box>
-          <Typography sx={{ fontFamily: 'Fraunces, serif', fontWeight: 700, lineHeight: 1, fontSize: 16.5, color: ink.text }}>Rudraganga</Typography>
+          <Typography sx={{ fontFamily: 'Fraunces, serif', fontWeight: 700, lineHeight: 1, fontSize: 16.5, color: ink.text }}>{brand.appName || 'Admin'}</Typography>
           <Typography variant="caption" sx={{ color: b.RED.soft, letterSpacing: 1.5, fontSize: 9.5, fontWeight: 600 }}>ADMIN CONSOLE</Typography>
         </Box>
       )}

@@ -12,7 +12,8 @@ import { Field, rules } from '../components/formKit';
 
 export default function ProductEditor() {
   const { id } = useParams();
-  const isNew = id === 'new';
+  // /products/new has no :id param → id is undefined; treat no-id as create mode.
+  const isNew = !id || id === 'new';
   const navigate = useNavigate();
   const { palette } = useTheme();
   const b = palette.brand;

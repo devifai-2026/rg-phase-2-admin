@@ -34,8 +34,11 @@ const GIFTS = [
 ];
 
 export default function AstrologerEditor() {
-  const { id } = useParams(); // 'new' or an id
-  const isNew = id === 'new';
+  const { id } = useParams(); // an id on /:id/edit; UNDEFINED on the literal /new route
+  // The /astrologers/new route has no :id param, so `id` is undefined there —
+  // treat "no id" (or the literal 'new') as create mode. (Was `id === 'new'`,
+  // which was false on /new → it wrongly loaded edit mode + fetched /undefined.)
+  const isNew = !id || id === 'new';
   const navigate = useNavigate();
   const { palette } = useTheme();
   const b = palette.brand;
