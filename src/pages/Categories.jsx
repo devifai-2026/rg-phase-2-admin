@@ -40,6 +40,16 @@ export default function Categories() {
   const onDelete = async (row) => { if (!window.confirm(`Delete ${row.name}?`)) return; try { await AdminAPI.deleteCategory(row._id); toast.success('Deleted'); load(); } catch { toast.error('Delete failed'); } };
 
   const columns = [
+    {
+      field: 'image', headerName: 'Photo', width: 84, sortable: false, filterable: false,
+      renderCell: (p) => (
+        <Box sx={{ width: 44, height: 44, borderRadius: 1.5, overflow: 'hidden', bgcolor: 'action.hover', display: 'grid', placeItems: 'center', my: 0.5 }}>
+          {p.value
+            ? <Box component="img" src={p.value} alt="" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : <Box sx={{ fontSize: 11, color: 'text.disabled' }}>—</Box>}
+        </Box>
+      ),
+    },
     { field: 'name', headerName: 'Name', flex: 1, minWidth: 180 },
     { field: 'slug', headerName: 'Slug', width: 200 },
     { field: 'isActive', headerName: 'Status', width: 120, renderCell: (p) => <StatusChip status={p.value ? 'active' : 'offline'} /> },
