@@ -160,12 +160,12 @@ function Catalog({ b }) {
               <Typography variant="caption" sx={{ color: b.textFaint }}>
                 Add at least one image. Portrait shows in the catalog list; landscape shows on the pooja detail page.
               </Typography>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                <Box sx={{ flex: 1 }}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ minWidth: 0 }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography variant="caption" sx={{ color: b.textDim, fontWeight: 700, display: 'block', mb: 0.5 }}>Portrait · shown in list (3:4)</Typography>
                   <ImageCropper value={imgPortrait} onChange={setImgPortrait} aspect={3 / 4} outWidth={600} outHeight={800} label="pooja-portrait" />
                 </Box>
-                <Box sx={{ flex: 1 }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography variant="caption" sx={{ color: b.textDim, fontWeight: 700, display: 'block', mb: 0.5 }}>Landscape · shown on detail (16:9)</Typography>
                   <ImageCropper value={imgLandscape} onChange={setImgLandscape} aspect={16 / 9} outWidth={1280} outHeight={720} label="pooja-landscape" />
                 </Box>

@@ -126,21 +126,24 @@ export default function ImageCropper({
     }
   };
 
+  // Responsive preview width so two croppers side-by-side (e.g. pooja portrait +
+  // landscape) never overflow their dialog. Caps at 140px, shrinks on tight space.
+  const previewW = 'min(140px, 34vw)';
   return (
-    <Box>
-      <Stack direction="row" spacing={2} alignItems="center">
+    <Box sx={{ minWidth: 0 }}>
+      <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" useFlexGap sx={{ minWidth: 0 }}>
         <Box
           sx={{
-            width: 200, height: 200 / aspect, borderRadius: 1.5, flexShrink: 0,
+            width: previewW, aspectRatio: `${aspect}`, borderRadius: 1.5, flexShrink: 0,
             border: `1px solid ${b.border}`, background: value ? `url(${value}) center/cover` : b.surface2,
             display: 'grid', placeItems: 'center',
           }}
         >
           {!value && <Typography variant="caption" sx={{ color: b.textFaint }}>No image</Typography>}
         </Box>
-        <Box>
+        <Box sx={{ minWidth: 0, flex: 1 }}>
           <input ref={fileRef} type="file" accept="image/*" hidden onChange={pick} />
-          <Button startIcon={<CropIcon />} variant="outlined" size="small" onClick={() => fileRef.current?.click()}>
+          <Button startIcon={<CropIcon />} variant="outlined" size="small" sx={{ whiteSpace: 'nowrap' }} onClick={() => fileRef.current?.click()}>
             {value ? `Replace ${label}` : `Upload & crop ${label}`}
           </Button>
           <Typography variant="caption" sx={{ display: 'block', color: b.textFaint, mt: 0.5 }}>
