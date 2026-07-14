@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import { AdminAPI } from '../api/endpoints';
 import { PageHeader } from '../components/common';
 import ImageCropper from '../components/ImageCropper';
+import ImageUpload from '../components/ImageUpload';
 import ThemeStudio from '../components/ThemeStudio';
 import SplashStudio from '../components/SplashStudio';
 
@@ -36,6 +37,7 @@ export default function AppConfiguration() {
       <PageHeader title="App Configuration" subtitle="Control what shows on the app's Home — banners, videos, lessons, and section visibility" />
       <Card>
         <Tabs value={tab} onChange={(e, v) => setTab(v)} variant="scrollable" scrollButtons="auto" sx={{ px: 2, borderBottom: `1px solid ${b.border}` }}>
+          <Tab label="Brand" />
           <Tab label="Promo Banners" />
           <Tab label="Videos & Lessons" />
           <Tab label="Section Visibility" />
@@ -43,13 +45,65 @@ export default function AppConfiguration() {
           <Tab label="Splash Screen" />
         </Tabs>
         <CardContent>
-          {tab === 0 && <BannersTab />}
-          {tab === 1 && <VideosTab />}
-          {tab === 2 && <SectionsTab />}
-          {tab === 3 && <ThemeStudio />}
-          {tab === 4 && <SplashStudio />}
+          {tab === 0 && <BrandTab />}
+          {tab === 1 && <BannersTab />}
+          {tab === 2 && <VideosTab />}
+          {tab === 3 && <SectionsTab />}
+          {tab === 4 && <ThemeStudio />}
+          {tab === 5 && <SplashStudio />}
         </CardContent>
       </Card>
+    </Box>
+  );
+}
+
+/* ─────────────────────────── Brand ─────────────────────────── */
+
+// Tenant identity as the APP shows it (splash, login, headers) — served live
+// from GET /app-config. The Android launcher label/icon are baked into the APK
+// at build time from the owner console, so those need a rebuild to change.
+function BrandTab() {
+  const { palette } = useTheme();
+  const b = palette.brand;
+  const [form, setForm] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    AdminAPI.getAppConfig()
+      .then((r) => {
+        const d = r.data.data || {};
+        setForm({ appName: d.appName || '', tagline: d.tagline || '', logoUrl: d.logoUrl || '' });
+      })
+      .catch(() => toast.error('Failed to load'));
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await AdminAPI.updateAppConfig({ appName: form.appName, tagline: form.tagline, logoUrl: form.logoUrl });
+      toast.success('Brand updated — apps pick it up on next launch/refresh');
+    } catch { toast.error('Failed to save'); }
+    finally { setSaving(false); }
+  };
+
+  if (!form) return <Stack alignItems="center" sx={{ py: 6 }}><CircularProgress /></Stack>;
+
+  return (
+    <Box sx={{ maxWidth: 520 }}>
+      <Typography variant="body2" sx={{ color: b.textDim, mb: 3 }}>
+        Display name, tagline and logo as shown inside the apps and on the login screens.
+        The tagline is auto-translated into every app language on save.
+      </Typography>
+      <Stack spacing={2.5}>
+        <ImageUpload value={form.logoUrl} onChange={(url) => setForm((f) => ({ ...f, logoUrl: url }))} label="logo" size={72} fallback={(form.appName || 'A')[0]} />
+        <TextField label="App display name" value={form.appName} onChange={(e) => setForm((f) => ({ ...f, appName: e.target.value }))} fullWidth
+          helperText="Shown in-app and on login. The phone's launcher (home-screen) name needs an app rebuild from the owner console." />
+        <TextField label="Tagline" value={form.tagline} onChange={(e) => setForm((f) => ({ ...f, tagline: e.target.value }))} fullWidth multiline maxRows={2}
+          helperText="One-liner on splash and login. Auto-translated on save." />
+        <Box>
+          <Button variant="contained" onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save brand'}</Button>
+        </Box>
+      </Stack>
     </Box>
   );
 }
