@@ -8,6 +8,7 @@ import { BarChart } from '@mui/x-charts/BarChart';
 import { LineChart } from '@mui/x-charts/LineChart';
 import CircleIcon from '@mui/icons-material/Circle';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import toast from 'react-hot-toast';
 import { AdminAPI } from '../api/endpoints';
 import { PageHeader } from '../components/common';
@@ -68,6 +69,8 @@ export default function ChatMonitor() {
   const [page, setPage] = useState(1);
   const [active, setActive] = useState(null); // a session whose transcript is open
   const [messages, setMessages] = useState([]);
+  const [showRecap, setShowRecap] = useState(false);
+  const [recap, setRecap] = useState(undefined); // undefined = not loaded, null = none
 
   // Build query params from the active filters (user/astrologer ids + dates).
   const queryParams = useMemo(() => {
@@ -109,8 +112,24 @@ export default function ChatMonitor() {
 
   const openSession = async (s) => {
     setActive(s);
+    setShowRecap(false); // collapse any recap from the previously opened chat
+    setRecap(undefined);
     try { const { data } = await AdminAPI.sessionMessages(s.sessionId); setMessages(data.data || []); }
     catch { setMessages([]); }
+  };
+
+  // Recap is fetched lazily on first open and then cached for this session.
+  // `undefined` = loading, `null` = none exists (chat may still be running).
+  const toggleRecap = async () => {
+    const next = !showRecap;
+    setShowRecap(next);
+    if (!next || recap !== undefined || !active) return;
+    try {
+      const { data } = await AdminAPI.listRecaps({ sessionId: active.sessionId, limit: 1 });
+      setRecap((data.data?.items || [])[0] || null);
+    } catch {
+      setRecap(null);
+    }
   };
 
   const setF = (k) => (v) => { setFilters((f) => ({ ...f, [k]: v })); setPage(1); };
@@ -167,15 +186,53 @@ export default function ChatMonitor() {
                 <>
                   <Stack direction="row" alignItems="center" justifyContent="space-between">
                     <Typography variant="h6">{active.user?.name || active.user?.phone || 'User'} ↔ {active.astrologer?.name || 'Astrologer'}</Typography>
-                    {isLive(active)
-                      ? <Chip size="small" icon={<CircleIcon sx={{ fontSize: 10 }} />} label="Live" sx={{ background: alpha(C.green, 0.16), color: C.green, fontWeight: 700 }} />
-                      : <Chip size="small" label={fmtDuration(active.durationSec)} sx={{ background: alpha(C.textFaint, 0.16), color: C.textDim, fontWeight: 700 }} />}
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Button
+                        size="small" variant={showRecap ? 'contained' : 'outlined'}
+                        startIcon={<AutoAwesomeIcon sx={{ fontSize: 15 }} />}
+                        onClick={toggleRecap}
+                      >
+                        AI recap
+                      </Button>
+                      {isLive(active)
+                        ? <Chip size="small" icon={<CircleIcon sx={{ fontSize: 10 }} />} label="Live" sx={{ background: alpha(C.green, 0.16), color: C.green, fontWeight: 700 }} />
+                        : <Chip size="small" label={fmtDuration(active.durationSec)} sx={{ background: alpha(C.textFaint, 0.16), color: C.textDim, fontWeight: 700 }} />}
+                    </Stack>
                   </Stack>
                   <Typography variant="caption" sx={{ color: C.textDim }}>
                     Read-only · session {String(active.sessionId).slice(0, 8)}
                     {!isLive(active) && active.totalAmount ? ` · ${inr(active.totalAmount)} · admin ${inr(active.adminEarning)} · astrologer ${inr(active.astrologerEarning)}` : ''}
                   </Typography>
                   <Divider sx={{ my: 1.5, borderColor: C.border }} />
+                  {showRecap && (
+                    <Box sx={{ mb: 1.5, p: 1.5, borderRadius: 2, border: `1px solid ${C.border}`, background: alpha(C.gold, 0.06), maxHeight: 200, overflowY: 'auto' }}>
+                      {recap === undefined && <Typography variant="body2" sx={{ color: C.textDim }}>Loading recap…</Typography>}
+                      {recap === null && (
+                        <Typography variant="body2" sx={{ color: C.textDim }}>
+                          No AI recap for this chat. Recaps are generated after a chat session ends.
+                        </Typography>
+                      )}
+                      {recap && (
+                        <Stack spacing={0.75}>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Typography variant="caption" sx={{ fontWeight: 800, color: C.gold, textTransform: 'uppercase', letterSpacing: 0.4 }}>AI recap</Typography>
+                            {recap.status && <Chip size="small" label={recap.status} sx={{ height: 18, fontSize: 10, background: alpha(C.textFaint, 0.16), color: C.textDim }} />}
+                          </Stack>
+                          {recap.summary && <Typography variant="body2">{recap.summary}</Typography>}
+                          {Array.isArray(recap.keyTopics) && recap.keyTopics.length > 0 && (
+                            <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                              {recap.keyTopics.map((k, i) => (
+                                <Chip key={i} size="small" label={k} sx={{ height: 18, fontSize: 10.5, background: alpha(C.textFaint, 0.14), color: C.textDim }} />
+                              ))}
+                            </Stack>
+                          )}
+                          {recap.sentiment && (
+                            <Typography variant="caption" sx={{ color: C.textDim }}>Sentiment: {recap.sentiment}</Typography>
+                          )}
+                        </Stack>
+                      )}
+                    </Box>
+                  )}
                   <Box sx={{ flex: 1, overflowY: 'auto', pr: 1 }}>
                     {messages.map((m) => {
                       const fromUser = String(m.sender?._id || m.sender) === String(active.user?._id);
