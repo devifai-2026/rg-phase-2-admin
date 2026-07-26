@@ -12,7 +12,6 @@ import { PageHeader, StatusChip, rupees } from '../components/common';
 import AdminTable from '../components/AdminTable';
 import { moneyColumn, actionsColumn } from '../components/tableHelpers';
 import { Field, rules } from '../components/formKit';
-import ImageUpload from '../components/ImageUpload';
 
 export default function RechargeTemplates() {
   const { palette } = useTheme();
@@ -20,7 +19,6 @@ export default function RechargeTemplates() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialog, setDialog] = useState(null);
-  const [image, setImage] = useState('');
   const [benefits, setBenefits] = useState('');
   const [isActive, setIsActive] = useState(true);
   const { register, handleSubmit, reset, watch, formState: { errors, isValid } } = useForm({ mode: 'onChange', defaultValues: { amount: 0, tokens: 0, name: '', badge: '', sortOrder: 0 } });
@@ -34,7 +32,7 @@ export default function RechargeTemplates() {
 
   const open = (row) => {
     reset({ amount: row?.amount ?? 0, tokens: row?.tokens ?? 0, name: row?.name || '', badge: row?.badge || '', sortOrder: row?.sortOrder ?? 0 });
-    setImage(row?.image || ''); setBenefits((row?.benefits || []).join('\n')); setIsActive(row?.isActive ?? true); setDialog(row || {});
+    setBenefits((row?.benefits || []).join('\n')); setIsActive(row?.isActive ?? true); setDialog(row || {});
   };
 
   const onSubmit = async (form) => {
@@ -42,7 +40,7 @@ export default function RechargeTemplates() {
       amount: Number(form.amount), tokens: Number(form.tokens),
       name: (form.name || '').trim(), badge: (form.badge || '').trim().toUpperCase(),
       benefits: benefits.split('\n').map((s) => s.trim()).filter(Boolean).slice(0, 8),
-      image, isActive, sortOrder: Number(form.sortOrder || 0),
+      isActive, sortOrder: Number(form.sortOrder || 0),
     };
     try {
       if (dialog._id) await AdminAPI.updateRechargeTemplate(dialog._id, body);
@@ -102,7 +100,6 @@ export default function RechargeTemplates() {
                     onChange={(e) => setBenefits(e.target.value)} InputLabelProps={{ shrink: true }}
                     placeholder={'Most popular\nInstant wallet credit'} helperText="Up to 8 lines" />
                   <Field name="sortOrder" label="Sort order (lower shows first)" type="number" register={register} errors={errors} inputProps={{ min: 0 }} />
-                  <ImageUpload value={image} onChange={setImage} label="icon" variant="rounded" size={56} fallback="₹" />
                   <FormControlLabel control={<Switch checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />} label="Active (visible in app)" />
                 </Stack>
               </Grid>
