@@ -389,8 +389,13 @@ function ChatStats({ C, stats }) {
                 xAxis={[{ scaleType: 'point', data: days }]}
                 yAxis={[{ id: 'count' }, { id: 'dur' }]}
                 series={[
-                  { yAxisId: 'count', data: daily.map((d) => d.chats || 0), label: 'Chats', color: C.RED.main, curve: 'monotoneX', showMark: false },
-                  { yAxisId: 'dur', data: daily.map((d) => Math.round((d.avgDurationSec || 0) / 60)), label: 'Avg min', color: C_AVG, curve: 'monotoneX', showMark: false },
+                  // showMark must be ON with only one or two days of data: a line
+                  // between fewer than 2 points draws NOTHING, so the panel looked
+                  // empty and the value only appeared on hover. Marks are hidden
+                  // again once there is enough history for the line to read
+                  // cleanly.
+                  { yAxisId: 'count', data: daily.map((d) => d.chats || 0), label: 'Chats', color: C.RED.main, curve: 'monotoneX', showMark: daily.length <= 2 },
+                  { yAxisId: 'dur', data: daily.map((d) => Math.round((d.avgDurationSec || 0) / 60)), label: 'Avg min', color: C_AVG, curve: 'monotoneX', showMark: daily.length <= 2 },
                 ]}
                 margin={{ left: 40, right: 40, top: 16, bottom: 28 }}
                 slotProps={{ legend: { position: { vertical: 'top', horizontal: 'right' }, labelStyle: { fontSize: 11 } } }}

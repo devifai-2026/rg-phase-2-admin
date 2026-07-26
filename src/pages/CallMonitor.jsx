@@ -40,11 +40,16 @@ export default function CallMonitor() {
   }, []);
   useEffect(() => { load(); const t = setInterval(load, 10000); return () => clearInterval(t); }, [load]);
 
-  // Recordings are only meaningful once the session COMPLETED and Agora has
-  // returned the recordingUrl. Split by media type into Audio vs Video tabs.
-  const recorded = useMemo(() => logs.filter((c) => c.status === 'completed' && c.recordingUrl), [logs]);
-  const audioRecs = useMemo(() => recorded.filter((c) => c.type === 'call'), [recorded]);
-  const videoRecs = useMemo(() => recorded.filter((c) => c.type === 'video'), [recorded]);
+  // Every COMPLETED call/video session, whether or not Agora returned a
+  // recording. Requiring recordingUrl here meant the tabs read "Audio (0) /
+  // Video (0)" while the header counted the same sessions as completed — a real
+  // call with no recording (recording disabled, or the upload failed) simply
+  // disappeared from the admin's view. The Recording column shows what's
+  // available per row instead.
+  const completed = useMemo(() => logs.filter((c) => c.status === 'completed'), [logs]);
+  const audioRecs = useMemo(() => completed.filter((c) => c.type === 'call'), [completed]);
+  const videoRecs = useMemo(() => completed.filter((c) => c.type === 'video'), [completed]);
+  const recorded = completed; // kept for the chart/summary below
 
   // Summary across all completed call/video sessions: totals for duration +
   // earnings (astrologer + admin).
@@ -72,7 +77,18 @@ export default function CallMonitor() {
       <Button size="small" startIcon={<PlayIcon />} onClick={() => setPlayer({ url: row.recordingUrl, type: row.type, title: `${row.type} · ${row.astroName || ''}` })} sx={{ color: C.gold, minWidth: 0, px: 1 }}>Play</Button>
       <IconButton size="small" href={row.recordingUrl} download target="_blank" sx={{ color: C.textDim }} aria-label="Download recording"><DownloadIcon fontSize="small" /></IconButton>
     </Stack>
-  ) : <Chip size="small" label="Processing…" sx={{ bgcolor: alpha(C.gold, 0.12), color: C.gold }} />;
+  ) : (
+    // "Processing…" only makes sense right after a call. Once a session has been
+    // over for a few minutes with no URL, there is no recording coming — saying
+    // "Processing" forever misled the admin into waiting for one.
+    (() => {
+      const endedMinsAgo = row.endedAt ? (Date.now() - new Date(row.endedAt)) / 60000 : 0;
+      const stillLikely = row.endedAt && endedMinsAgo < 10;
+      return stillLikely
+        ? <Chip size="small" label="Processing…" sx={{ bgcolor: alpha(C.gold, 0.12), color: C.gold }} />
+        : <Chip size="small" label="Not recorded" sx={{ bgcolor: alpha(C.textFaint, 0.12), color: C.textDim }} />;
+    })()
+  );
 
   const recCols = [
     { field: 'astroName', headerName: 'Astrologer', flex: 1, minWidth: 130 },
@@ -119,7 +135,9 @@ export default function CallMonitor() {
 
       {/* Audio vs Video recording counts — quick graphical representation */}
       <Card sx={{ p: 2, mb: 2 }}>
-        <Typography variant="subtitle2" sx={{ mb: 1, color: C.textDim }}>Recordings by type</Typography>
+        {/* Counts COMPLETED sessions per type, not just recorded ones — it read
+            0/0 before while the header said 2 completed. */}
+        <Typography variant="subtitle2" sx={{ mb: 1, color: C.textDim }}>Completed sessions by type</Typography>
         <BarChart
           height={200}
           margin={{ left: 40, right: 16, top: 10, bottom: 28 }}
