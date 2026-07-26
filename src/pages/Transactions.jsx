@@ -65,7 +65,23 @@ export default function Transactions() {
   const columns = [
     dateColumn({ field: 'createdAt', headerName: 'Date', width: 150 }),
     { field: 'userName', headerName: 'User', flex: 1, minWidth: 150 },
-    { field: 'type', headerName: 'Type', width: 100, renderCell: (p) => <StatusChip status={p.value === 'credit' ? 'completed' : 'failed'} /> },
+    {
+      // Credit/debit is a DIRECTION, not an outcome. This reused the status
+      // chip, so every debit rendered as a red "Failed" next to a green
+      // "Completed" status — reading as if paid consultations had failed.
+      field: 'type', headerName: 'Type', width: 100,
+      renderCell: (p) => {
+        const credit = p.value === 'credit';
+        const tone = credit ? b.green : b.amber;
+        return (
+          <Chip
+            size="small"
+            label={credit ? 'Credit' : 'Debit'}
+            sx={{ background: alpha(tone, 0.14), color: tone, fontWeight: 700 }}
+          />
+        );
+      },
+    },
     { field: 'source', headerName: 'Source', width: 130, renderCell: (p) => <Chip size="small" label={String(p.value).replace(/_/g, ' ')} sx={{ background: alpha(b.textFaint, 0.12), color: b.textDim, textTransform: 'capitalize' }} /> },
     {
       field: 'amount', headerName: 'Amount', width: 130, type: 'number', align: 'right', headerAlign: 'right',
