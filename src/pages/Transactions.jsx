@@ -54,7 +54,12 @@ export default function Transactions() {
         AdminAPI.listTransactions(p),
         AdminAPI.transactionsSummary(params()),
       ]);
-      setRows(list.data.data.items.map((t) => ({ id: t._id, ...t, userName: t.user?.name || t.user?.phone })));
+      setRows(list.data.data.items.map((t) => ({
+        id: t._id,
+        ...t,
+        userName: t.user?.name || t.user?.phone,
+        userRole: t.user?.role || '',
+      })));
       setRowCount(list.data.data.total);
       setSummary(sum.data.data);
     } catch { toast.error('Failed to load transactions'); }
@@ -65,6 +70,23 @@ export default function Transactions() {
   const columns = [
     dateColumn({ field: 'createdAt', headerName: 'Date', width: 150 }),
     { field: 'userName', headerName: 'User', flex: 1, minWidth: 150 },
+    {
+      // Whose ledger this is. An astrologer credit is an earning; a user credit
+      // is a recharge — the amount alone doesn't distinguish them.
+      field: 'userRole', headerName: 'Role', width: 110, sortable: false,
+      renderCell: (p) => {
+        if (!p.value) return <span style={{ color: b.textFaint }}>—</span>;
+        const isAstro = p.value === 'astrologer';
+        const tone = isAstro ? b.gold : b.textDim;
+        return (
+          <Chip
+            size="small"
+            label={isAstro ? 'Astrologer' : 'User'}
+            sx={{ background: alpha(tone, 0.14), color: tone, fontWeight: 600, textTransform: 'capitalize' }}
+          />
+        );
+      },
+    },
     {
       // Credit/debit is a DIRECTION, not an outcome. This reused the status
       // chip, so every debit rendered as a red "Failed" next to a green
