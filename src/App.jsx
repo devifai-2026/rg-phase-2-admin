@@ -30,6 +30,7 @@ import Pooja from './pages/Pooja';
 import RechargeTemplates from './pages/RechargeTemplates';
 import ChatMonitor from './pages/ChatMonitor';
 import CallMonitor from './pages/CallMonitor';
+import UnansweredSessions from './pages/UnansweredSessions';
 import Withdrawals from './pages/Withdrawals';
 import Escalations from './pages/Escalations';
 import Settings from './pages/Settings';
@@ -95,6 +96,9 @@ export default function App() {
         <Route path="/vedic-astro" element={<RequireSuperAdmin><VedicAstroSettings /></RequireSuperAdmin>} />
         <Route path="/monitor/chats" element={<ChatMonitor />} />
         <Route path="/monitor/calls" element={<CallMonitor />} />
+        {/* Sibling path, NOT a child of /monitor/calls: the sidebar highlights by
+            prefix match, so a nested path would light up both entries. */}
+        <Route path="/monitor/missed-calls" element={<UnansweredSessions />} />
         <Route path="/ai-reminders" element={<AiReminders />} />
         <Route path="/admin-feedback" element={<AdminFeedback />} />
         <Route path="/llm-logs" element={<RequireSuperAdmin><LlmLogs /></RequireSuperAdmin>} />

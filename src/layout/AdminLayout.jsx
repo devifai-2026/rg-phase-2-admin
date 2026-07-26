@@ -20,6 +20,7 @@ import CouponIcon from '@mui/icons-material/LocalOffer';
 import BundleIcon from '@mui/icons-material/Inventory';
 import ChatIcon from '@mui/icons-material/Forum';
 import CallIcon from '@mui/icons-material/PhoneInTalk';
+import PhoneMissedIcon from '@mui/icons-material/PhoneMissed';
 import PayoutIcon from '@mui/icons-material/AccountBalanceWallet';
 import ReceiptIcon from '@mui/icons-material/SwapHoriz';
 import InvoiceIcon from '@mui/icons-material/Description';
@@ -113,6 +114,7 @@ const GROUPS = [
     items: [
       { to: '/monitor/chats', label: 'Live Chats', icon: <ChatIcon /> },
       { to: '/monitor/calls', label: 'Calls & Recordings', icon: <CallIcon /> },
+      { to: '/monitor/missed-calls', label: 'Missed & Cancelled', icon: <PhoneMissedIcon /> },
       { to: '/ai-reminders', label: 'AI Notifications', icon: <AiIcon /> },
       { to: '/admin-feedback', label: 'Admin Feedback', icon: <RateReviewIcon /> },
       { to: '/escalations', label: 'Escalations', icon: <WarningIcon />, badge: 'escalation' },

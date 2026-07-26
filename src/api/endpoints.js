@@ -155,6 +155,8 @@ export const AdminAPI = {
   liveChats: () => api.get('/admin/monitor/chats'),
   activeCalls: () => api.get('/admin/monitor/calls'),
   callLogs: (params) => api.get('/admin/monitor/call-logs', { params }),
+  // Missed / cancelled / rejected consultations across chat, call and video.
+  unansweredSessions: (params) => api.get('/admin/monitor/unanswered', { params }),
   // Chat history + analytics (params: user, astrologer, q, from, to, page, limit)
   chatLogs: (params) => api.get('/admin/monitor/chat-logs', { params }),
   chatAnalytics: (params) => api.get('/admin/monitor/chat-analytics', { params }),
