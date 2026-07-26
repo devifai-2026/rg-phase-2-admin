@@ -21,7 +21,7 @@ import { PublicAPI } from '../api/endpoints';
  *  - onChange(url): called with the uploaded cropped URL
  *  - aspect: width/height ratio to lock (default 5 → 5:1 promo strip)
  *  - outWidth/outHeight: exact export pixels (default 1200×240)
- *  - label: button text noun
+ *  - label: short slug used in the crop dialog title and upload filename
  */
 export default function ImageCropper({
   value, onChange, aspect = 5, outWidth = 1200, outHeight = 240, label = 'banner',
@@ -129,6 +129,11 @@ export default function ImageCropper({
   // Responsive preview width so two croppers side-by-side (e.g. pooja portrait +
   // landscape) never overflow their dialog. Caps at 140px, shrinks on tight space.
   const previewW = 'min(140px, 34vw)';
+  // Show a clean "16:9" rather than the raw float (16/9 = 1.7777…). Reduce the
+  // exported pixel size, which is always a whole-number pair, by its GCD.
+  const gcd = (x, y) => (y ? gcd(y, x % y) : x);
+  const g = gcd(outWidth, outHeight) || 1;
+  const ratioLabel = `${outWidth / g}:${outHeight / g}`;
   return (
     <Box sx={{ minWidth: 0 }}>
       <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" useFlexGap sx={{ minWidth: 0 }}>
@@ -141,13 +146,19 @@ export default function ImageCropper({
         >
           {!value && <Typography variant="caption" sx={{ color: b.textFaint }}>No image</Typography>}
         </Box>
-        <Box sx={{ minWidth: 0, flex: 1 }}>
+        <Box sx={{ minWidth: 0, flex: '1 1 0' }}>
           <input ref={fileRef} type="file" accept="image/*" hidden onChange={pick} />
-          <Button startIcon={<CropIcon />} variant="outlined" size="small" sx={{ whiteSpace: 'nowrap' }} onClick={() => fileRef.current?.click()}>
-            {value ? `Replace ${label}` : `Upload & crop ${label}`}
+          <Button
+            startIcon={<CropIcon />} variant="outlined" size="small" fullWidth
+            sx={{ minWidth: 0, justifyContent: 'flex-start', '& .MuiButton-startIcon': { flexShrink: 0 } }}
+            onClick={() => fileRef.current?.click()}
+          >
+            <Box component="span" sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {value ? 'Replace image' : 'Upload & crop'}
+            </Box>
           </Button>
           <Typography variant="caption" sx={{ display: 'block', color: b.textFaint, mt: 0.5 }}>
-            Locked to {aspect}:1 · exports {outWidth}×{outHeight}px
+            Locked to {ratioLabel} · exports {outWidth}×{outHeight}px
           </Typography>
         </Box>
       </Stack>

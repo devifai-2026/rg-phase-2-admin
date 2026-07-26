@@ -144,7 +144,7 @@ export default function AstrologerEditor() {
     setOtp({ open: true, code: '', sending: true, saving: false, body });
     try {
       await AdminAPI.requestAstrologerOtp(phone10);
-      toast.success('OTP sent (use 123456 in dev)');
+      toast.success('OTP sent');
       setOtp((s) => ({ ...s, sending: false }));
     } catch (e) {
       toast.error(e.response?.data?.message || 'Could not send OTP');
@@ -366,7 +366,6 @@ export default function AstrologerEditor() {
               We sent a 6-digit code to <b>+91 {otp.body?.phone}</b>. Enter it to confirm this number{isNew ? '' : ' change'}.
             </Typography>
             <TextField label="6-digit OTP" value={otp.code} autoFocus fullWidth disabled={otp.sending}
-              helperText="Use 123456 in dev"
               onChange={(e) => setOtp((s) => ({ ...s, code: e.target.value.replace(/\D/g, '').slice(0, 6) }))} />
           </Stack>
         </DialogContent>
