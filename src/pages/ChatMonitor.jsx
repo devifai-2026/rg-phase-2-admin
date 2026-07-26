@@ -239,8 +239,25 @@ export default function ChatMonitor() {
                       return (
                         <Stack key={m._id} alignItems={fromUser ? 'flex-start' : 'flex-end'} sx={{ mb: 1 }}>
                           <Box sx={{ maxWidth: '70%', px: 1.5, py: 1, borderRadius: 2, background: fromUser ? alpha(C.surface2, 0.8) : alpha(C.gold, 0.15), border: `1px solid ${C.border}` }}>
-                            <Typography variant="body2">{m.message}</Typography>
+                            {m.message && <Typography variant="body2">{m.message}</Typography>}
                             {m.mediaUrl && <img src={m.mediaUrl} alt="" style={{ maxWidth: 160, borderRadius: 8, marginTop: 4 }} />}
+                            {/* A shared product carries no message text and no
+                                mediaUrl, so without this it rendered as an empty
+                                bubble — the transcript looked like it had a gap. */}
+                            {m.product?.productId && (
+                              <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: m.message ? 0.75 : 0 }}>
+                                {m.product.image && (
+                                  <img src={m.product.image} alt="" style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover' }} />
+                                )}
+                                <Box sx={{ minWidth: 0 }}>
+                                  <Typography variant="caption" sx={{ color: C.gold, fontWeight: 700, display: 'block' }}>Shared product</Typography>
+                                  <Typography variant="body2" noWrap sx={{ fontWeight: 600 }}>{m.product.name || 'Product'}</Typography>
+                                  {m.product.price != null && (
+                                    <Typography variant="caption" sx={{ color: C.textDim }}>₹{m.product.price}</Typography>
+                                  )}
+                                </Box>
+                              </Stack>
+                            )}
                           </Box>
                           <Typography variant="caption" sx={{ color: C.textDim, mt: 0.3 }}>{new Date(m.timestamp).toLocaleTimeString()}</Typography>
                         </Stack>
