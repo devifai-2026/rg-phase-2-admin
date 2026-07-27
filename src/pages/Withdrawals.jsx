@@ -55,13 +55,13 @@ export default function Withdrawals() {
     dateColumn({ field: 'requestedAt', headerName: 'Requested' }),
     {
       field: '__actions', headerName: 'Actions', width: 180, sortable: false, align: 'right', headerAlign: 'right',
-      renderCell: (p) => p.row.status === 'pending'
-        ? (
-          <RowActions actions={[
-            { icon: <CloseIcon fontSize="small" />, tip: 'Reject', danger: true, onClick: () => reject(p.row) },
-          ]} extra={<PrimaryCellButton onClick={() => process(p.row)}>Process Payout</PrimaryCellButton>} />
-        )
-        : <StatusChip status={p.row.status} />,
+      // WithdrawalActions (top of this file) renders the Process Payout button +
+      // Reject icon, and falls back to a StatusChip for non-pending rows. It was
+      // orphaned when this cell was switched to RowActions — which crashed the
+      // page (RowActions was never imported) and, worse, would have dropped the
+      // Process Payout button even once imported: RowActions only renders
+      // `actions` and has no `extra` prop.
+      renderCell: (p) => <WithdrawalActions row={p.row} onProcess={process} onReject={reject} />,
     },
   ];
 
