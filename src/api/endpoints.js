@@ -162,6 +162,11 @@ export const AdminAPI = {
   chatAnalytics: (params) => api.get('/admin/monitor/chat-analytics', { params }),
   sessionMessages: (sessionId) => api.get(`/admin/monitor/sessions/${sessionId}/messages`),
 
+  // AI consultations (read-only). Separate collection from human sessions, so
+  // these are separate endpoints rather than a filter on chatLogs.
+  aiChats: (params) => api.get('/admin/ai-chats', { params }),
+  aiChat: (aiSessionId) => api.get(`/admin/ai-chats/${aiSessionId}`),
+
   // Withdrawals
   listWithdrawals: (params) => api.get('/admin/withdrawals', { params }),
   approveWithdrawal: (id, note) => api.patch(`/admin/withdrawals/${id}/approve`, { note }),

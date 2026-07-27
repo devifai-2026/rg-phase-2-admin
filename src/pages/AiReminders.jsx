@@ -55,7 +55,13 @@ export default function AiReminders() {
   };
 
   const gridSx = {
-    '& .MuiDataGrid-cell': { display: 'flex', alignItems: 'center' },
+    // Rows size to their content (getRowHeight 'auto'), which removes the fixed
+    // height that was clipping long text — but auto rows collapse onto their own
+    // borders without explicit padding and a minimum.
+    '& .MuiDataGrid-cell': {
+      display: 'flex', alignItems: 'center',
+      py: 1.25, minHeight: 56, lineHeight: 1.35,
+    },
     '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 700 },
     '& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-cell:focus': { outline: 'none' },
   };
@@ -128,12 +134,14 @@ export default function AiReminders() {
       <Box sx={{ height: 600 }}>
         {tab === 0 && (
           <DataGrid rows={notifs} columns={notifCols} loading={loading} disableRowSelectionOnClick
-            rowHeight={64} columnHeaderHeight={48} sx={gridSx}
+            /* Cells wrap (whiteSpace: normal); a fixed rowHeight clipped long
+               notification text mid-word. 'auto' sizes each row to its content. */
+            getRowHeight={() => 'auto'} columnHeaderHeight={48} sx={gridSx}
             pageSizeOptions={[25, 50, 100]} initialState={{ pagination: { paginationModel: { pageSize: 25 } } }} />
         )}
         {tab === 1 && (
           <DataGrid rows={recaps} columns={recapCols} loading={loading} disableRowSelectionOnClick
-            rowHeight={72} columnHeaderHeight={48} sx={gridSx}
+            getRowHeight={() => 'auto'} columnHeaderHeight={48} sx={gridSx}
             pageSizeOptions={[25, 50, 100]} initialState={{ pagination: { paginationModel: { pageSize: 25 } } }} />
         )}
       </Box>
@@ -159,7 +167,34 @@ export default function AiReminders() {
                 return (
                   <Box key={m._id} sx={{ alignSelf: isSystem ? 'center' : 'flex-start', maxWidth: '90%', bgcolor: isSystem ? alpha(C.gold, 0.1) : C.surface2, border: `1px solid ${C.borderSoft}`, borderRadius: 2, px: 1.5, py: 1 }}>
                     {!isSystem && <Typography variant="caption" sx={{ color: C.gold, fontWeight: 700 }}>{who}</Typography>}
-                    <Typography variant="body2" sx={{ color: C.text, whiteSpace: 'pre-wrap' }}>{m.message || (m.mediaUrl ? '[image]' : '')}</Typography>
+                    {m.message && (
+                      <Typography variant="body2" sx={{ color: C.text, whiteSpace: 'pre-wrap' }}>{m.message}</Typography>
+                    )}
+                    {/* Shown as the actual image, not the literal text "[image]". */}
+                    {m.mediaUrl && (
+                      <Box
+                        component="img" src={m.mediaUrl} alt=""
+                        sx={{ display: 'block', maxWidth: 180, borderRadius: 1.5, mt: m.message ? 0.75 : 0 }}
+                      />
+                    )}
+                    {/* A shared product carries NO message text and no mediaUrl, so
+                        without this it rendered as an empty bubble — the transcript
+                        looked like it had a gap where the astrologer shared something. */}
+                    {m.product?.productId && (
+                      <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: m.message ? 0.75 : 0 }}>
+                        {m.product.image && (
+                          <Box component="img" src={m.product.image} alt=""
+                            sx={{ width: 40, height: 40, borderRadius: 1, objectFit: 'cover' }} />
+                        )}
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography variant="caption" sx={{ color: C.gold, fontWeight: 700, display: 'block' }}>Shared product</Typography>
+                          <Typography variant="body2" noWrap sx={{ fontWeight: 600 }}>{m.product.name || 'Product'}</Typography>
+                          {m.product.price != null && (
+                            <Typography variant="caption" sx={{ color: C.textDim }}>₹{m.product.price}</Typography>
+                          )}
+                        </Box>
+                      </Stack>
+                    )}
                     <Typography variant="caption" sx={{ color: C.textDim }}>{m.timestamp ? new Date(m.timestamp).toLocaleString('en-IN') : ''}</Typography>
                   </Box>
                 );

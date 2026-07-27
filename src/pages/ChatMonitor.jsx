@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   Box, Grid, Card, CardContent, Typography, List, ListItemButton, Stack, Avatar, Chip, Divider,
-  TextField, Autocomplete, Button, Tooltip, keyframes,
+  TextField, Autocomplete, Button, Tooltip, keyframes, Tabs, Tab, Pagination,
 } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import { BarChart } from '@mui/x-charts/BarChart';
@@ -71,6 +71,9 @@ export default function ChatMonitor() {
   const [messages, setMessages] = useState([]);
   const [showRecap, setShowRecap] = useState(false);
   const [recap, setRecap] = useState(undefined); // undefined = not loaded, null = none
+  // 'human' = consultations with a real astrologer, 'ai' = AI astrologer chats.
+  // Two different collections, so they are two panels rather than one filtered list.
+  const [tab, setTab] = useState('human');
 
   // Build query params from the active filters (user/astrologer ids + dates).
   const queryParams = useMemo(() => {
@@ -138,6 +141,17 @@ export default function ChatMonitor() {
   return (
     <Box>
       <PageHeader title="Live Chat Monitor" subtitle="Read-only quality & compliance oversight — live sessions, history & earnings" />
+
+      <Tabs
+        value={tab}
+        onChange={(_, v) => setTab(v)}
+        sx={{ mb: 2, borderBottom: `1px solid ${C.border}`, '& .MuiTab-root': { fontWeight: 700, textTransform: 'none' } }}
+      >
+        <Tab value="human" label="Consultations" />
+        <Tab value="ai" label="AI Consultations" icon={<AutoAwesomeIcon sx={{ fontSize: 16 }} />} iconPosition="start" />
+      </Tabs>
+
+      {tab === 'ai' ? <AiConsultations C={C} /> : <>
 
       <ChatFilters C={C} filters={filters} setF={setF} onClear={() => { setFilters(EMPTY_FILTERS); setPage(1); }} anyFilter={anyFilter} />
 
@@ -274,6 +288,7 @@ export default function ChatMonitor() {
 
       {/* Chat history */}
       <ChatHistory C={C} history={history} page={page} setPage={setPage} onOpen={openSession} />
+      </>}
     </Box>
   );
 }
@@ -478,5 +493,208 @@ function ChatHistory({ C, history, page, setPage, onOpen }) {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+// ── AI consultations ────────────────────────────────────────────────────────
+// AI chats live in their own collection (AiChatSession) with no astrologer and
+// no earnings split — 100% of the fee is platform revenue. That is why this is a
+// separate panel rather than a filter on the human chat list: almost none of the
+// columns above apply.
+
+/** Colour + label per AI session status. */
+const AI_STATUS = {
+  completed: ['Ended', '#3CCB7F'],
+  ongoing: ['Live', '#E0A93B'],
+  open: ['Not started', '#9A9DA8'],
+};
+
+/** Why a session closed, in words the admin can act on. */
+const AI_END_REASON = {
+  user_ended: 'User ended',
+  low_balance: 'Balance ran out',
+  max_minutes: 'Hit the time cap',
+  crisis: 'Crisis — escalated',
+  stuck: 'Auto-closed (stuck)',
+};
+
+function AiConsultations({ C }) {
+  const [rows, setRows] = useState({ items: [], total: 0 });
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [active, setActive] = useState(null);   // { session, messages }
+  // Ended chats are the default view: an ongoing one has nothing to review yet.
+  const [status, setStatus] = useState('completed');
+  const [reviewOnly, setReviewOnly] = useState(false);
+
+  const LIMIT = 12;
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    AdminAPI.aiChats({ status: status || undefined, needsReview: reviewOnly || undefined, page, limit: LIMIT })
+      .then(({ data }) => { if (!cancelled) setRows(data.data || { items: [], total: 0 }); })
+      .catch(() => { if (!cancelled) toast.error('Could not load AI consultations'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [status, reviewOnly, page]);
+
+  const open = async (s) => {
+    try {
+      const { data } = await AdminAPI.aiChat(s.aiSessionId);
+      setActive(data.data);
+    } catch { toast.error('Could not load the transcript'); }
+  };
+
+  const pages = Math.max(1, Math.ceil((rows.total || 0) / LIMIT));
+
+  return (
+    <Grid container spacing={2.5}>
+      {/* List */}
+      <Grid item xs={12} md={5}>
+        <Card sx={{ height: 620 }}>
+          <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }} flexWrap="wrap" useFlexGap>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, flex: 1 }}>
+                AI consultations {rows.total ? `(${rows.total})` : ''}
+              </Typography>
+              {[['completed', 'Ended'], ['ongoing', 'Live'], ['', 'All']].map(([v, label]) => (
+                <Chip
+                  key={label} size="small" label={label}
+                  onClick={() => { setStatus(v); setPage(1); }}
+                  sx={{
+                    fontWeight: 700, cursor: 'pointer',
+                    background: status === v ? alpha(C.gold, 0.18) : alpha(C.textFaint, 0.12),
+                    color: status === v ? C.gold : C.textDim,
+                  }}
+                />
+              ))}
+              {/* A crisis-flagged chat must be one click away. */}
+              <Chip
+                size="small" label="Needs review"
+                onClick={() => { setReviewOnly((v) => !v); setPage(1); }}
+                sx={{
+                  fontWeight: 700, cursor: 'pointer',
+                  background: reviewOnly ? alpha('#ef4444', 0.18) : alpha(C.textFaint, 0.12),
+                  color: reviewOnly ? '#ef4444' : C.textDim,
+                }}
+              />
+            </Stack>
+            <Divider sx={{ mb: 1, borderColor: C.border }} />
+
+            <Box sx={{ flex: 1, overflowY: 'auto' }}>
+              {loading && <Typography sx={{ color: C.textDim, textAlign: 'center', py: 4 }}>Loading…</Typography>}
+              {!loading && rows.items.length === 0 && (
+                <Typography sx={{ color: C.textDim, textAlign: 'center', py: 4 }}>No AI consultations yet</Typography>
+              )}
+              <List dense disablePadding>
+                {rows.items.map((s) => {
+                  const [label, colour] = AI_STATUS[s.status] || [s.status, C.textDim];
+                  return (
+                    <ListItemButton
+                      key={s._id}
+                      selected={active?.session?.aiSessionId === s.aiSessionId}
+                      onClick={() => open(s)}
+                      sx={{ borderRadius: 2, mb: 0.5, border: `1px solid ${C.border}` }}
+                    >
+                      <Stack sx={{ width: '100%', minWidth: 0 }} spacing={0.4}>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Avatar sx={{ width: 26, height: 26, bgcolor: alpha(C.gold, 0.2), color: C.gold, fontSize: 12 }}>
+                            <AutoAwesomeIcon sx={{ fontSize: 14 }} />
+                          </Avatar>
+                          <Typography variant="body2" noWrap sx={{ fontWeight: 700, flex: 1 }}>
+                            {s.user?.name || s.user?.phone || 'Unknown'}
+                          </Typography>
+                          {s.needsReview && (
+                            <Chip size="small" label="Review" sx={{ height: 18, fontSize: 10, fontWeight: 800, background: alpha('#ef4444', 0.18), color: '#ef4444' }} />
+                          )}
+                          <Chip size="small" label={label} sx={{ height: 18, fontSize: 10, fontWeight: 700, background: alpha(colour, 0.16), color: colour }} />
+                        </Stack>
+                        <Typography variant="caption" sx={{ color: C.textDim }} noWrap>
+                          {s.persona?.name || 'AI astrologer'}
+                          {s.topic ? ` · ${s.topic}` : ''}
+                          {` · ${s.billedMinutes || 0} min · ${inr(s.totalAmount)}`}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: C.textFaint }}>
+                          {new Date(s.createdAt).toLocaleString()}
+                        </Typography>
+                      </Stack>
+                    </ListItemButton>
+                  );
+                })}
+              </List>
+            </Box>
+
+            {pages > 1 && (
+              <Stack alignItems="center" sx={{ pt: 1 }}>
+                <Pagination size="small" count={pages} page={page} onChange={(_, p) => setPage(p)} />
+              </Stack>
+            )}
+          </CardContent>
+        </Card>
+      </Grid>
+
+      {/* Transcript */}
+      <Grid item xs={12} md={7}>
+        <Card sx={{ height: 620 }}>
+          <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            {!active && (
+              <Stack alignItems="center" justifyContent="center" sx={{ height: '100%' }}>
+                <Typography sx={{ color: C.textDim }}>Select a consultation to read its transcript</Typography>
+              </Stack>
+            )}
+            {active && <AiTranscript C={C} data={active} />}
+          </CardContent>
+        </Card>
+      </Grid>
+    </Grid>
+  );
+}
+
+/** One AI consultation: header facts, then the turns. Read-only by design —
+ *  there is no astrologer to moderate and no recap to approve. */
+function AiTranscript({ C, data }) {
+  const s = data.session || {};
+  const messages = data.messages || [];
+  const [label, colour] = AI_STATUS[s.status] || [s.status, C.textDim];
+  return (
+    <>
+      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 800, flex: 1 }}>
+          {s.user?.name || s.user?.phone || 'Unknown'} · {s.persona?.name || 'AI astrologer'}
+        </Typography>
+        {s.needsReview && (
+          <Chip size="small" label="Needs review" sx={{ fontWeight: 800, background: alpha('#ef4444', 0.18), color: '#ef4444' }} />
+        )}
+        <Chip size="small" label={label} sx={{ fontWeight: 700, background: alpha(colour, 0.16), color: colour }} />
+      </Stack>
+      <Typography variant="caption" sx={{ color: C.textDim }}>
+        Read-only · {String(s.aiSessionId || '').slice(0, 8)}
+        {` · ${s.billedMinutes || 0} min · ${inr(s.totalAmount)} at ${inr(s.ratePerMin)}/min`}
+        {/* 100% platform revenue: an AI chat has no astrologer to pay. */}
+        {s.endReason ? ` · ${AI_END_REASON[s.endReason] || s.endReason}` : ''}
+      </Typography>
+      <Divider sx={{ my: 1.5, borderColor: C.border }} />
+      <Box sx={{ flex: 1, overflowY: 'auto', pr: 1 }}>
+        {messages.map((m, i) => {
+          const fromUser = m.role === 'user';
+          return (
+            <Stack key={m._id || i} alignItems={fromUser ? 'flex-start' : 'flex-end'} sx={{ mb: 1 }}>
+              <Box sx={{
+                maxWidth: '75%', px: 1.5, py: 1, borderRadius: 2,
+                background: fromUser ? alpha(C.surface2, 0.8) : alpha(C.gold, 0.15),
+                border: `1px solid ${C.border}`,
+              }}>
+                <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{m.content}</Typography>
+              </Box>
+              <Typography variant="caption" sx={{ color: C.textDim, mt: 0.3 }}>
+                {fromUser ? 'Seeker' : 'AI'} · {new Date(m.createdAt).toLocaleTimeString()}
+              </Typography>
+            </Stack>
+          );
+        })}
+        {messages.length === 0 && <Typography sx={{ color: C.textDim, textAlign: 'center', py: 4 }}>No messages</Typography>}
+      </Box>
+    </>
   );
 }
