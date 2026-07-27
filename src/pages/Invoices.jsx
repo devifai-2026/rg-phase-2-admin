@@ -42,7 +42,7 @@ export default function Invoices() {
 }
 
 /* ─────────────────────────── Templates ─────────────────────────── */
-const EMPTY = { name: '', design: 1, businessName: 'Rudraganga', logo: '', addressLine1: '', addressLine2: '', city: '', state: '', pincode: '', phone: '', email: '', gstin: '', footerNote: 'Thank you for choosing Rudraganga 🙏', isDefault: false, isActive: true };
+const EMPTY = { name: '', design: 1, businessName: 'Rudraganga', logo: '', addressLine1: '', addressLine2: '', city: '', state: '', pincode: '', phone: '', email: '', gstin: '', gstEnabled: false, gstRate: 18, gstState: '', footerNote: 'Thank you for choosing Rudraganga 🙏', isDefault: false, isActive: true };
 
 function Templates({ b }) {
   const [rows, setRows] = useState([]);
@@ -136,7 +136,35 @@ function Templates({ b }) {
               <Grid item xs={6}><TextField label="Phone" fullWidth value={form.phone} onChange={set('phone')} InputLabelProps={{ shrink: true }} /></Grid>
               <Grid item xs={6}><TextField label="Email" fullWidth value={form.email} onChange={set('email')} InputLabelProps={{ shrink: true }} /></Grid>
             </Grid>
-            <TextField label="GSTIN (optional)" fullWidth value={form.gstin} onChange={set('gstin')} InputLabelProps={{ shrink: true }} />
+            {/* GST. Off by default: most tenants start unregistered, and an invoice
+                that prints tax lines without a GSTIN is worse than one that prints
+                none. Enabling reveals the fields the calculation needs. */}
+            <FormControlLabel
+              control={<Switch checked={!!form.gstEnabled} onChange={(e) => setForm((f) => ({ ...f, gstEnabled: e.target.checked }))} />}
+              label="Charge GST on invoices"
+            />
+            {form.gstEnabled && (
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <TextField label="GSTIN" fullWidth required value={form.gstin} onChange={set('gstin')}
+                    placeholder="22AAAAA0000A1Z5" InputLabelProps={{ shrink: true }}
+                    helperText="Printed on every invoice under your address." />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField label="GST rate %" type="number" fullWidth value={form.gstRate}
+                    onChange={set('gstRate')} InputLabelProps={{ shrink: true }}
+                    helperText="Prices are treated as GST-inclusive." />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField label="Your state" fullWidth value={form.gstState} onChange={set('gstState')}
+                    placeholder="West Bengal" InputLabelProps={{ shrink: true }}
+                    helperText="Same state as buyer = CGST+SGST, else IGST." />
+                </Grid>
+              </Grid>
+            )}
+            {!form.gstEnabled && (
+              <TextField label="GSTIN (optional)" fullWidth value={form.gstin} onChange={set('gstin')} InputLabelProps={{ shrink: true }} />
+            )}
             <TextField label="Footer note" fullWidth value={form.footerNote} onChange={set('footerNote')} InputLabelProps={{ shrink: true }} />
             <FormControlLabel control={<Switch checked={form.isDefault} onChange={(e) => setForm((f) => ({ ...f, isDefault: e.target.checked }))} />} label="Use as default for all invoices" />
           </Stack>

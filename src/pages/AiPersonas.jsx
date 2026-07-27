@@ -27,6 +27,9 @@ export default function AiPersonas() {
   const [avatar, setAvatar] = useState('');
   const [expertise, setExpertise] = useState([]);
   const [isActive, setIsActive] = useState(true);
+  // The tenant-wide fallback (AdminSettings.aiChatRatePerMin). Shown in the
+  // preview when a persona leaves its own rate blank.
+  const [defaultRate, setDefaultRate] = useState(null);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef();
   const { register, handleSubmit, reset, watch, formState: { errors, isValid } } = useForm({ mode: 'onChange' });
@@ -37,9 +40,16 @@ export default function AiPersonas() {
     catch { toast.error('Failed to load'); } finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
+  // Fetch the tenant default once, so a persona with a blank rate previews the
+  // figure a seeker would actually be charged rather than "Free".
+  useEffect(() => {
+    AdminAPI.getSettings()
+      .then(({ data }) => setDefaultRate(data?.data?.aiChatRatePerMin ?? null))
+      .catch(() => {});
+  }, []);
 
   const open = (row) => {
-    reset({ name: row?.name || '', tagline: row?.tagline || '', description: row?.description || '', systemPrompt: row?.systemPrompt || '' });
+    reset({ name: row?.name || '', tagline: row?.tagline || '', description: row?.description || '', systemPrompt: row?.systemPrompt || '', chatRatePerMin: row?.chatRatePerMin ?? '' });
     setAvatar(row?.avatar || ''); setExpertise(row?.expertise || []); setIsActive(row?.isActive ?? true); setDialog(row || {});
   };
 
@@ -51,7 +61,10 @@ export default function AiPersonas() {
   };
 
   const onSubmit = async (form) => {
-    const body = { ...form, avatar, expertise, isActive };
+    // Blank means "inherit the tenant default" (AdminSettings.aiChatRatePerMin),
+    // so send null rather than 0, which would mean genuinely free.
+    const rate = String(form.chatRatePerMin ?? '').trim();
+    const body = { ...form, avatar, expertise, isActive, chatRatePerMin: rate === '' ? null : Number(rate) };
     try {
       if (dialog._id) await AdminAPI.updatePersona(dialog._id, body);
       else await AdminAPI.createPersona(body);
@@ -74,6 +87,9 @@ export default function AiPersonas() {
       ),
     },
     { field: 'expertise', headerName: 'Expertise', flex: 1, minWidth: 180, valueGetter: (v) => (v || []).join(', ') || '—' },
+    { field: 'chatRatePerMin', headerName: 'Rate/min', width: 110, align: 'right', headerAlign: 'right',
+      // null = inherits the tenant default; say so rather than showing a bare dash.
+      valueGetter: (v) => (v === null || v === undefined ? 'Default' : (v === 0 ? 'Free' : `Rs ${v}`)) },
     { field: 'isActive', headerName: 'Status', width: 110, renderCell: (p) => <StatusChip status={p.value ? 'active' : 'offline'} /> },
     actionsColumn({ count: 2, getActions: (row) => [
       { icon: <EditIcon fontSize="small" />, tip: 'Edit', onClick: () => open(row) },
@@ -101,6 +117,13 @@ export default function AiPersonas() {
                   <TextField label="Description" multiline rows={2} fullWidth InputLabelProps={{ shrink: true }} {...register('description')} />
                   <TextField label="System prompt (hidden — shapes AI behaviour)" multiline rows={4} fullWidth InputLabelProps={{ shrink: true }}
                     placeholder="e.g. You are Acharya Veda, a warm Vedic astrologer who focuses on remedies…" {...register('systemPrompt')} />
+                  <TextField
+                    label="Chat rate (Rs / min)" type="number" fullWidth size="small"
+                    placeholder="Leave blank to use the default rate"
+                    helperText="Blank inherits the tenant default. 0 makes this astrologer free."
+                    InputLabelProps={{ shrink: true }}
+                    {...register('chatRatePerMin')}
+                  />
                   <FormControlLabel control={<Switch checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />} label="Active (visible in app)" />
                 </Stack>
               </Grid>
@@ -108,7 +131,7 @@ export default function AiPersonas() {
                 <Typography variant="overline" sx={{ color: b.textDim }}>App preview</Typography>
                 <Box sx={{ mt: 1, display: 'flex', justifyContent: 'center' }}>
                   <PhoneFrame width={260}>
-                    <AiPersonaPreview name={watch('name')} avatar={avatar} tagline={watch('tagline')} description={watch('description')} expertise={expertise} />
+                    <AiPersonaPreview name={watch('name')} avatar={avatar} tagline={watch('tagline')} description={watch('description')} expertise={expertise} chatRatePerMin={watch('chatRatePerMin')} defaultRate={defaultRate} />
                   </PhoneFrame>
                 </Box>
               </Grid>

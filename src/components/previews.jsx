@@ -129,7 +129,7 @@ export function AstrologerPreview({
 }
 
 /** ── AI astrologer persona, as seen in the app (violet/indigo, chat-only, 24×7) ── */
-export function AiPersonaPreview({ name, avatar, tagline, description, expertise = [], languages = [] }) {
+export function AiPersonaPreview({ name, avatar, tagline, description, expertise = [], languages = [], chatRatePerMin, defaultRate }) {
   const VIOLET = '#8C6FF0';
   const INDIGO = '#5B6FD0';
   const MINT = '#8FD0C0';
@@ -163,8 +163,16 @@ export function AiPersonaPreview({ name, avatar, tagline, description, expertise
         {languages.length > 0 && <Typography sx={{ fontSize: 11, color: APP.faint, mt: 1 }}>{languages.join(' · ')}</Typography>}
         {description && <Typography sx={{ fontSize: 12, color: APP.dim, lineHeight: 1.6, mt: 1 }}>{description}</Typography>}
 
+        {/* The CTA showed a hardcoded "Free" regardless of the configured rate, so
+            the preview contradicted what a seeker would actually be charged.
+            A blank per-persona rate inherits the tenant default. */}
         <Box sx={{ mt: 2, p: 1.4, borderRadius: 2.5, textAlign: 'center', fontWeight: 700, color: '#fff', background: `linear-gradient(135deg, ${VIOLET}, ${INDIGO})` }}>
-          Chat now · Free
+          {(() => {
+            const r = (chatRatePerMin === null || chatRatePerMin === undefined || chatRatePerMin === '')
+              ? defaultRate : Number(chatRatePerMin);
+            if (r === null || r === undefined || Number.isNaN(r)) return 'Chat now';
+            return r > 0 ? `Chat now · ₹${r}/min` : 'Chat now · Free';
+          })()}
         </Box>
       </Box>
     </Box>
