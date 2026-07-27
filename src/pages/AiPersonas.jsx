@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, Stack, Avatar, Autocomplete, TextField, FormControlLabel, Switch, Typography, Grid } from '@mui/material';
+import { Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, Stack, Avatar, Autocomplete, TextField, FormControlLabel, Switch, Typography, Grid, MenuItem } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { AiPersonaPreview } from '../components/previews';
 import PhoneFrame from '../components/PhoneFrame';
@@ -18,6 +18,25 @@ import ImageUpload from '../components/ImageUpload';
 
 const EXPERTISE = ['Vedic', 'Numerology', 'Tarot', 'Love & Relationships', 'Career', 'Vastu', 'Palmistry'];
 
+/**
+ * Specialisation → which PO-managed prompt this astrologer reads with.
+ *
+ * The admin picks a specialisation; the actual instructions live in the platform
+ * owner's console (prompt keys aiTopicCareer, aiTopicMarriage, ...). The admin
+ * neither sees nor edits the prompt text, so behaviour and safety stay owned in
+ * one place and cannot be weakened per tenant.
+ * Values must match aiAstrologerService.TOPICS.
+ */
+const SPECIALISATIONS = [
+  { value: '', label: 'General guidance (whole chart)' },
+  { value: 'career', label: 'Career and work' },
+  { value: 'marriage', label: 'Marriage and relationships' },
+  { value: 'finance', label: 'Money and finances' },
+  { value: 'health', label: 'Health and wellbeing' },
+  { value: 'education', label: 'Education and studies' },
+  { value: 'travel', label: 'Travel and relocation' },
+];
+
 export default function AiPersonas() {
   const { palette } = useTheme();
   const b = palette.brand;
@@ -30,6 +49,7 @@ export default function AiPersonas() {
   // The tenant-wide fallback (AdminSettings.aiChatRatePerMin). Shown in the
   // preview when a persona leaves its own rate blank.
   const [defaultRate, setDefaultRate] = useState(null);
+  const [topic, setTopic] = useState('');
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef();
   const { register, handleSubmit, reset, watch, formState: { errors, isValid } } = useForm({ mode: 'onChange' });
@@ -49,7 +69,8 @@ export default function AiPersonas() {
   }, []);
 
   const open = (row) => {
-    reset({ name: row?.name || '', tagline: row?.tagline || '', description: row?.description || '', systemPrompt: row?.systemPrompt || '', chatRatePerMin: row?.chatRatePerMin ?? '' });
+    reset({ name: row?.name || '', tagline: row?.tagline || '', description: row?.description || '', chatRatePerMin: row?.chatRatePerMin ?? '' });
+    setTopic(row?.topic || '');
     setAvatar(row?.avatar || ''); setExpertise(row?.expertise || []); setIsActive(row?.isActive ?? true); setDialog(row || {});
   };
 
@@ -64,7 +85,7 @@ export default function AiPersonas() {
     // Blank means "inherit the tenant default" (AdminSettings.aiChatRatePerMin),
     // so send null rather than 0, which would mean genuinely free.
     const rate = String(form.chatRatePerMin ?? '').trim();
-    const body = { ...form, avatar, expertise, isActive, chatRatePerMin: rate === '' ? null : Number(rate) };
+    const body = { ...form, avatar, expertise, isActive, topic, chatRatePerMin: rate === '' ? null : Number(rate) };
     try {
       if (dialog._id) await AdminAPI.updatePersona(dialog._id, body);
       else await AdminAPI.createPersona(body);
@@ -115,8 +136,20 @@ export default function AiPersonas() {
                   <Field name="tagline" label="Tagline (short)" register={register} errors={errors} />
                   <Autocomplete multiple freeSolo options={EXPERTISE} value={expertise} onChange={(e, v) => setExpertise(v)} renderInput={(p) => <TextField {...p} label="Expertise" InputLabelProps={{ shrink: true }} />} />
                   <TextField label="Description" multiline rows={2} fullWidth InputLabelProps={{ shrink: true }} {...register('description')} />
-                  <TextField label="System prompt (hidden — shapes AI behaviour)" multiline rows={4} fullWidth InputLabelProps={{ shrink: true }}
-                    placeholder="e.g. You are Acharya Veda, a warm Vedic astrologer who focuses on remedies…" {...register('systemPrompt')} />
+                  {/* Specialisation, NOT a prompt box. The reading instructions are
+                      owned by the platform owner (PO console → AI Prompts); the admin
+                      only chooses which set this astrologer uses. Exposing the prompt
+                      here let a tenant rewrite behaviour and safety rules. */}
+                  <TextField
+                    select label="Specialisation" fullWidth
+                    InputLabelProps={{ shrink: true }}
+                    helperText="Chooses the reading style and which houses this astrologer focuses on."
+                    value={topic} onChange={(e) => setTopic(e.target.value)}
+                  >
+                    {SPECIALISATIONS.map((o) => (
+                      <MenuItem key={o.value || 'general'} value={o.value}>{o.label}</MenuItem>
+                    ))}
+                  </TextField>
                   <TextField
                     label="Chat rate (Rs / min)" type="number" fullWidth size="small"
                     placeholder="Leave blank to use the default rate"
