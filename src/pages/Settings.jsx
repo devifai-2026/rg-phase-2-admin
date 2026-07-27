@@ -35,6 +35,12 @@ export default function Settings() {
       signupBonus: num('signupBonus'),
       signupFreeChatEnabled: !!form.signupFreeChatEnabled,
       signupFreeChatMinutes: num('signupFreeChatMinutes'),
+      // Tenant-wide AI chat rate. The AI Astrologers page READ this
+      // (AdminSettings.aiChatRatePerMin) to preview what a seeker would pay when a
+      // persona leaves its own rate blank — but there was nowhere to SET it, so it
+      // stayed at the schema default of 0 and every AI astrologer previewed and
+      // billed as "Free".
+      aiChatRatePerMin: num('aiChatRatePerMin'),
     };
     try { await AdminAPI.updateSettings(body); toast.success('Settings saved'); }
     catch (e) { toast.error(e.response?.data?.message || 'Save failed'); }
@@ -144,6 +150,17 @@ export default function Settings() {
             <Section title="Payments & wallet">
               <Grid container spacing={2.5}>
                 {numField('withdrawalThreshold', 'Minimum withdrawal (₹)', 'Astrologers must reach this to request a payout')}
+              </Grid>
+            </Section>
+          </CardContent>
+        </Card>
+
+        <Card sx={{ mb: 2 }}>
+          <CardContent>
+            <Section title="AI Astrologer pricing">
+              <Grid container spacing={2.5}>
+                {numField('aiChatRatePerMin', 'AI chat rate (₹ / min)',
+                  'Default for every AI astrologer. Set 0 to make AI chat free. A persona can override this on its own edit screen.')}
               </Grid>
             </Section>
           </CardContent>
